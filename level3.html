@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+
+</body>
+<script>
+ 
+  function Ajax(options){
+
+    this.options = options
+
+  }
+  const ajax = new Ajax({
+    data:JSON.stringify({
+      limit:10,       //初始化参数，可以为空
+    }),
+    headers:{
+      "Content-Type":"application/x-www-form-urlencoded"
+    },
+    //发出请求前，对参数和请求头进行设置
+    beforeSuccess: (oldHeader,newHeader,oldData,newData) => {    
+    function formsParams(oldData,newData){
+      var arr = [];
+      for(let i in newData){
+          arr.push(i + '=' + newData[i])
+      }
+      for(let i in oldData){
+          arr.push(i + "=" + oldData[i]);
+      }
+      list=[] 
+      for(let i in arr){
+        list.push(arr[i].split("=")[0])
+      }
+      //对参数进行去重，参数名称相同的以最后请求中的值为准
+      var uniArr=[];
+      for (var i = 0; i < list.length; i++) {
+        if(list.indexOf(list[i]) == i){
+        uniArr.push(arr[i]);
+      }
+    }
+    return uniArr.join("&");
+  }
+    let data = formsParams(oldData,newData)
+    let header
+    if(newHeader){
+      header = newHeader
+    }
+    else{
+      header = oldHeader
+    }
+    return [header,data]
+    },
+    afterSuccess: (res) => { 
+      console.log(res)
+      console.log("数据请求成功!")  //初始化请求成功后的操作
+    },
+    beforeError: (url,header) => { 
+      console.log(url,header)
+    },
+    afterError: (err) => { 
+      console.log("error:",err)    //初始化请求失败后的操作
+    },
+   
+  }) 
+
+//封装get
+Ajax.prototype.get = function(...options){
+  let url = options[0]
+  let oldData = JSON.parse(ajax.options.data)
+  let newData = JSON.parse(options[1].data)
+  let oldHeader = ajax.options.headers
+  let newHeader = options[1].headers
+  let getValue = ajax.options.beforeSuccess(oldHeader,newHeader,oldData,newData)
+  let [header,data] = getValue 
+  url =url + "?" + data
+  ajax.options.beforeError(url,header)
+
+
+  const xhr = new XMLHttpRequest()
+  xhr.open('get', url, true)
+  xhr.setRequestHeader(Object.keys(header),Object.values(header))
+
+  xhr.onreadystatechange = () => {
+  if (xhr.readyState === 4) {
+    if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
+      const res = JSON.parse(xhr.responseText)
+      ajax.options.afterSuccess(res)
+      options[1].success()
+    } else {
+      ajax.options.afterError(xhr)
+      options[1].error()
+    }
+  }
+  xhr.onerror=(err)=>{
+    console.log(err)
+  }
+}
+xhr.send()
+}
+//封装post
+Ajax.prototype.post = function(...options){
+  let url = options[0]
+  let oldData = JSON.parse(ajax.options.data)
+  let newData = JSON.parse(options[1].data)
+  let oldHeader = ajax.options.headers
+  let newHeader = options[1].headers
+  let getValue = ajax.options.beforeSuccess(oldHeader,newHeader,oldData,newData)
+  let [header,data] = getValue 
+  ajax.options.beforeError(url,header)
+
+
+  const xhr = new XMLHttpRequest()
+  xhr.open('post', url, true)
+  xhr.setRequestHeader(Object.keys(header),Object.values(header))
+  
+  xhr.onreadystatechange = () => {
+  if (xhr.readyState === 4) {
+    if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
+      const res = JSON.parse(xhr.responseText)
+      ajax.options.afterSuccess(res)
+      options[1].success()
+    } else {
+      ajax.options.afterError(xhr)
+      options[1].error()
+    }
+  }
+  xhr.onerror=(err)=>{
+    console.log(err)
+  }
+}
+xhr.send(data)
+}
+
+ajax.get("http://cloud-music.pl-fe.cn/personalized",{
+  data:JSON.stringify({
+    limit:20,
+  }),
+  headers:{
+    "Content-Type":"application/x-www-form-urlencoded"
+  },
+  success:()=>{
+    console.log("请求成功")  
+    //code...           在此处自定义请求成功后的操作
+  },
+  error:()=>{
+    console.log("请求失败")      //自定义请求失败后的操作
+  }
+})
+
+
+</script>
+</html>
